@@ -20,7 +20,8 @@
             };
 
             dataBase.onsuccess = function(e){
-                alert('Base de datos cargada correctamente');
+                // alert('Base de datos cargada correctamente');
+                loadAll();
             };
 
             dataBase.onerror = function(e){
@@ -48,20 +49,140 @@
                 document.querySelector("#name").value = '';
                 document.querySelector("#surname").value = '';
                 alert("objeto agregado correctamente");
+                loadAll();
             }
+        }
+
+        function loadAll(){
+            var active = dataBase.result;
+            var data = active.transaction(["people"],"readonly");
+            var object = data.objectStore("people");
+
+            var elements = [];
+            object.openCursor().onsuccess = function(e){
+                var result = e.target.result;
+                if(result === null){
+                    return;
+                }
+                elements.push(result.value);
+                result.continue();
+            };
+            
+            data.oncomplete = function(){
+         
+                var outerHTML = '';
+
+                for(var key in elements){
+                    outerHTML += "<tr><td>"+elements[key].dni+"</td><td>"+elements[key].name+
+                                "</td><td><button type='button' class='btn btn-success' onclick='load("+elements[key].id+
+                                ")'>Details</button><buttontype='button' class='btn btn-primary' onclick='loadByDni("+elements[key].dni+")'>DetailsDni</button></td></tr>";
+                }
+
+                elements= [];
+                document.querySelector("#elementList").innerHTML = outerHTML;
+            };
+        }
+
+        function load(id){
+            var active = dataBase.result;
+            var data = active.transaction(["people"], 'readonly');
+            var object = data.objectStore("people");
+
+            var request = object.get(parseInt(id));
+
+            request.onsuccess = function(){
+                var result = request.result;
+
+                if(result !== undefined){
+                    alert("ID: "+result.id+" DNI: "+result.dni+" NOMBRE: "+result.name);
+                }
+            }
+        };
+
+        function loadByDni(dni){
+            
+            var active = dataBase.result;
+            var data = active.transaction(["people"],"readonly");
+            var object = data.objectStore("people");
+            var index = object.index("by_dni");
+
+
+            var request = index.get(String(dni));
+            request.onsuccess = function(){
+                var result = request.result;
+                if(result != undefined){
+                     alert("ID: "+result.id+" DNI: "+result.dni+" NOMBRE: "+result.name);
+                }
+            }
+        };
+        
+        function loadAllByName(){
+            var active = dataBase.result;
+            var data = active.transaction(["people"],"readonly");
+            var object = data.objectStore("people");
+            var index = object.index("by_name");
+            
+            var elements = [];
+
+            index.openCursor().onsuccess = function(e){
+                var result = e.target.result;
+                if(result === null){
+                    return;
+                }
+                elements.push(result.value);
+                result.continue();
+            };
+            
+            data.oncomplete = function(){
+              
+                var outerHTML = '';
+
+                for(var key in elements){
+                    outerHTML += "<tr><td>"+elements[key].dni+"</td><td>"+elements[key].name+
+                                "</td><td><button type='button' class='btn btn-success' onclick='load("+elements[key].id+
+                                ")'>Details</button><buttontype='button' class='btn btn-primary' onclick='loadByDni("+elements[key].dni+")'>DetailsDni</button></td></tr>";
+                }
+
+                elements= [];
+                document.querySelector("#elementList").innerHTML = outerHTML;
+            };
         }
     </script>
 </head>
 <body onload="startDB();">
     <div class="container">
-        <div class="row">
-            <div class="col-md-6">
-                <!--<div class="input-group">-->
+        
+        <div class="col-md-6 col-md-offset-3">
+            <h1>Creacion de Base de Datos</h1>
+            <div class="row">
+                <div class="form-group">
                     <input type="text" class="form-control" id ="dni" placeholder="Introducir dni"/>
-                <!--</div>s-->
-                <input type="text" class="form-control" id ="name" placeholder="Introducir nombre"/>
-                <input type="text" class="form-control" id ="surname" placeholder="Introducir Apellidos"/>
-                <button type="button" class="btn btn-primary" onclick="add();">Guardar</button>
+                </div>
+                <div class="form-group">
+                    <input type="text" class="form-control" id ="name" placeholder="Introducir nombre"/>
+                </div>
+                <div class="form-group">
+                    <input type="text" class="form-control" id ="surname" placeholder="Introducir Apellidos"/>
+                </div>
+                <button type="button" class="btn btn-default" onclick="add();">Guardar</button>
+            </div>
+            <div class="row" id="elements">
+                <h3 class="text-center">Personas</h3>
+                <table class="table">
+                    
+                    <thead>
+                        <tr>
+                            <th>DNI</th>
+                            <th>Nombre</th>
+                            <th><button class="btn btn-default btn-xs" type="button" onclick="loadAllByName();">Ordenar por nombre</button></th>
+                        </tr>
+                    </thead>
+                    <tbody id="elementList">
+                        <tr>
+                            <td colspan="3" class="text-center">No hay elementos que mostrar</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
