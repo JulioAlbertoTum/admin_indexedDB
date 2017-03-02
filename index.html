@@ -31,15 +31,26 @@
 
         function add(){
             var active = dataBase.result;
-        var data = active.transaction(["people"], "readwrite");
+            var data = active.transaction(["people"], "readwrite");
             var object = data.objectStore("people");
 
-            var request = object.put({
-                dni: document.querySelector("#dni").value,
-                name: document.querySelector("#name").value,
-                surname: document.querySelector("#surname").value
-            });
+            var index = document.querySelector("#index").value
+            if(index == undefined || index == ""){
+                var request = object.put({
+                    dni: document.querySelector("#dni").value,
+                    name: document.querySelector("#name").value,
+                    surname: document.querySelector("#surname").value
+                });     
+            }else{
+                var request = object.put({
+                    id: parseInt(index),
+                    dni: document.querySelector("#dni").value,
+                    name: document.querySelector("#name").value,
+                    
+                });
 
+            }
+            
             request.onerror = function(e){
                 alert(request.error.name+"\n\n"+request.error.message);
             };
@@ -73,9 +84,9 @@
                 var outerHTML = '';
 
                 for(var key in elements){
-                    outerHTML += "<tr><td>"+elements[key].dni+"</td><td>"+elements[key].name+
+                    outerHTML += "<tr id='"+elements[key].id+"'><td>"+elements[key].dni+"</td><td>"+elements[key].name+
                                 "</td><td><button type='button' class='btn btn-success' onclick='load("+elements[key].id+
-                                ")'>Details</button><buttontype='button' class='btn btn-primary' onclick='loadByDni("+elements[key].dni+")'>DetailsDni</button></td></tr>";
+                                ")'>Details</button><button type='button' class='btn btn-primary' onclick='loadByDni("+elements[key].dni+")'>DetailsDni</button><button type='button' class='btn btn-warning' onclick='edit("+elements[key].id+")'>Editar</button><button type='button' class='btn btn-danger' onclick='destroy("+elements[key].id+")'>Eliminar</button></td></tr>";
                 }
 
                 elements= [];
@@ -96,6 +107,45 @@
                 if(result !== undefined){
                     alert("ID: "+result.id+" DNI: "+result.dni+" NOMBRE: "+result.name);
                 }
+            }
+        };
+
+        function edit(id){
+            var active = dataBase.result;
+            var data = active.transaction(["people"], 'readonly');
+            var object = data.objectStore("people");
+
+            var request = object.get(parseInt(id));
+
+            request.onsuccess = function(){
+                var result = request.result;
+                var dni = document.getElementById("dni");
+                var name = document.getElementById("name");
+                var index = document.getElementById("index");
+                if(result !== undefined){
+                    dni.value = result.dni;
+                    name.value = result.name;
+                    index.value = result.id;
+                }
+            }
+        }
+
+         function destroy(id){
+            var active = dataBase.result;
+            var data = active.transaction(["people"], 'readwrite');
+            var object = data.objectStore("people");
+
+            var request = object.delete(parseInt(id));
+
+            request.onsuccess = function(){
+                    alert("se ha eliminado correctamente");
+                     var elem = document.getElementById(id);
+                     elem.parentNode.removeChild(elem);       
+            }
+
+            request.onerror = function(e){
+                alert(request.error.name+"\n\n"+request.error.message);
+               
             }
         };
 
@@ -140,7 +190,7 @@
                 for(var key in elements){
                     outerHTML += "<tr><td>"+elements[key].dni+"</td><td>"+elements[key].name+
                                 "</td><td><button type='button' class='btn btn-success' onclick='load("+elements[key].id+
-                                ")'>Details</button><buttontype='button' class='btn btn-primary' onclick='loadByDni("+elements[key].dni+")'>DetailsDni</button></td></tr>";
+                                ")'>Details</button><button type='button' class='btn btn-primary' onclick='loadByDni("+elements[key].dni+")'>DetailsDni</button><button type='button' class='btn btn-warning' onclick='edit("+elements[key].id+")'>Editar</button><button type='button' class='btn btn-danger' onclick='destroy("+elements[key].id+")'>Eliminar</button></td></tr>";
                 }
 
                 elements= [];
@@ -160,6 +210,7 @@
                 </div>
                 <div class="form-group">
                     <input type="text" class="form-control" id ="name" placeholder="Introducir nombre"/>
+                    <input type="hidden" id="index" name="index" value = "">
                 </div>
                 <div class="form-group">
                     <input type="text" class="form-control" id ="surname" placeholder="Introducir Apellidos"/>
